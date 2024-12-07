@@ -1,0 +1,202 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Activity, User, Calendar, Clock, Award } from 'lucide-react';
+
+const AngerAssessment = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    sex: '',
+    date: '',
+    relationship: '',
+    hoursPerWeek: '',
+    answers: Array(5).fill(null)
+  });
+
+  const [scores, setScores] = useState({
+    rawScore: 0,
+    tScore: 0,
+    severity: ''
+  });
+
+  const [activeQuestion, setActiveQuestion] = useState(0);
+
+  const questions = [
+    "I was irritated more than people knew.",
+    "I felt angry.",
+    "I felt like I was ready to explode.",
+    "I was grouchy.",
+    "I felt annoyed."
+  ];
+
+  // T-score conversion table
+  const tScoreTable = {
+    5: 32.9, 6: 38.1, 7: 41.3, 8: 44, 9: 46.3, 10: 48.4,
+    11: 50.5, 12: 52.6, 13: 54.7, 14: 56.7, 15: 58.8,
+    16: 60.8, 17: 62.9, 18: 65, 19: 67.2, 20: 69.4,
+    21: 71.7, 22: 74.1, 23: 76.8, 24: 79.7, 25: 83.3
+  };
+
+  const calculateScores = (answers) => {
+    const validAnswers = answers.filter(answer => answer !== null);
+    if (validAnswers.length === 0) return;
+
+    let rawScore;
+    if (validAnswers.length === 5) {
+      rawScore = validAnswers.reduce((sum, val) => sum + val, 0);
+    } else if (validAnswers.length >= 4) {
+      const partialSum = validAnswers.reduce((sum, val) => sum + val, 0);
+      rawScore = Math.round((partialSum * 5) / validAnswers.length);
+    } else {
+      return;
+    }
+
+    const tScore = tScoreTable[rawScore] || 0;
+    let severity = 'None to slight';
+    if (tScore >= 70) severity = 'Severe';
+    else if (tScore >= 60) severity = 'Moderate';
+    else if (tScore >= 55) severity = 'Mild';
+
+    setScores({ rawScore, tScore, severity });
+  };
+
+  useEffect(() => {
+    calculateScores(formData.answers);
+  }, [formData.answers]);
+
+  const handleAnswerChange = (index, value) => {
+    const newAnswers = [...formData.answers];
+    newAnswers[index] = value;
+    setFormData({ ...formData, answers: newAnswers });
+    
+    // Animate to next question after brief delay
+    setTimeout(() => {
+      if (index < 4) {
+        setActiveQuestion(index + 1);
+      }
+    }, 300);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
+      <Card className="max-w-3xl mx-auto my-6 shadow-lg transition-all duration-300 hover:shadow-xl">
+        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-t-lg">
+          <div className="flex items-center space-x-2">
+            <Activity className="w-6 h-6" />
+            <CardTitle>PROMIS Emotional Assessment</CardTitle>
+          </div>
+          <p className="text-blue-100 mt-2">Level 2—Anger—Adult Short Form</p>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-8">
+            {/* Basic Information Form */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative transition-all duration-300 hover:scale-105">
+                <User className="absolute left-3 top-3 text-blue-500 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Name"
+                  className="pl-10 w-full p-3 rounded-lg border border-blue-200 focus:border-purple-400 focus:ring focus:ring-purple-200 transition-all"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="relative transition-all duration-300 hover:scale-105">
+                <Clock className="absolute left-3 top-3 text-blue-500 w-5 h-5" />
+                <input
+                  type="number"
+                  placeholder="Age"
+                  className="pl-10 w-full p-3 rounded-lg border border-blue-200 focus:border-purple-400 focus:ring focus:ring-purple-200 transition-all"
+                  value={formData.age}
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                />
+              </div>
+              <div className="relative transition-all duration-300 hover:scale-105">
+                <Calendar className="absolute left-3 top-3 text-blue-500 w-5 h-5" />
+                <input
+                  type="date"
+                  className="pl-10 w-full p-3 rounded-lg border border-blue-200 focus:border-purple-400 focus:ring focus:ring-purple-200 transition-all"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                />
+              </div>
+              <select
+                className="w-full p-3 rounded-lg border border-blue-200 focus:border-purple-400 focus:ring focus:ring-purple-200 transition-all duration-300 hover:scale-105"
+                value={formData.sex}
+                onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
+              >
+                <option value="">Select Sex</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+
+            {/* Questions */}
+            <div className="space-y-6">
+              {questions.map((question, index) => (
+                <div
+                  key={index}
+                  className={`transform transition-all duration-500 ${
+                    index === activeQuestion ? 'scale-100 opacity-100' : 'scale-95 opacity-60'
+                  }`}
+                >
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
+                    <p className="text-lg mb-4 text-gray-700">{question}</p>
+                    <div className="flex justify-between items-center flex-wrap gap-4">
+                      {['Never', 'Rarely', 'Sometimes', 'Often', 'Always'].map((label, value) => (
+                        <button
+                          key={value}
+                          onClick={() => handleAnswerChange(index, value + 1)}
+                          className={`px-4 py-2 rounded-full transition-all duration-300 transform hover:scale-105 ${
+                            formData.answers[index] === value + 1
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Results */}
+            {scores.rawScore > 0 && (
+              <div className="transform transition-all duration-500">
+                <Alert className="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Award className="text-blue-500 w-6 h-6" />
+                    <h3 className="text-lg font-semibold text-blue-700">Assessment Results</h3>
+                  </div>
+                  <AlertDescription>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                        <span className="text-gray-600">Raw Score</span>
+                        <span className="text-lg font-semibold text-blue-600">{scores.rawScore}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                        <span className="text-gray-600">T-Score</span>
+                        <span className="text-lg font-semibold text-purple-600">{scores.tScore.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                        <span className="text-gray-600">Severity Level</span>
+                        <span className="text-lg font-semibold text-indigo-600">{scores.severity}</span>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AngerAssessment;
+  // ... your original AngerAssessment component code here ...
+}
